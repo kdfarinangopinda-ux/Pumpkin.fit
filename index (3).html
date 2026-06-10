@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pumpkin Fit | Gomitas de Calabaza Funcionales</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Plus+Jakarta+Sans:wght@300..800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #fefaf6;
+        }
+        .brand-font {
+            font-family: 'Fredoka', sans-serif;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #f97316;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <div id="notification-container" class="fixed top-5 right-5 z-50 flex flex-col gap-3 pointer-events-none"></div>
+
+    <header class="sticky top-0 z-40 bg-white/90 backdrop-blur-md shadow-sm border-b border-orange-100">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <a href="#" onclick="switchView('inicio')" class="flex items-center gap-2 group">
+                <div class="bg-orange-500 text-white p-2 rounded-2xl shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
+                    <i data-lucide="sparkles" class="w-6 h-6"></i>
+                </div>
+                <span class="brand-font text-2xl font-bold tracking-wide text-orange-600">Pumpkin<span class="text-amber-500">Fit</span></span>
+            </a>
+
+            <nav class="hidden md:flex items-center gap-6 font-medium text-gray-600">
+                <a href="#" onclick="switchView('inicio')" class="hover:text-orange-500 transition-colors">Inicio</a>
+                <a href="#" onclick="switchView('catalogo')" class="hover:text-orange-500 transition-colors">Catálogo</a>
+                <a href="#" onclick="switchView('nosotros')" class="hover:text-orange-500 transition-colors">Nosotros</a>
+                <a href="#" onclick="switchView('contacto')" class="hover:text-orange-500 transition-colors">Contacto</a>
+                <a href="#" onclick="switchView('admin')" id="nav-admin" class="hidden text-purple-600 hover:text-purple-700 font-semibold bg-purple-50 px-3 py-1.5 rounded-xl flex items-center gap-1"><i data-lucide="shield-check" class="w-4 h-4"></i> Admin</a>
+            </nav>
+
+            <div class="flex items-center gap-4">
+                <div class="relative hidden sm:block">
+                    <input type="text" id="global-search" oninput="handleGlobalSearch(this.value)" placeholder="Buscar gomitas..." class="w-48 focus:w-64 bg-gray-50 border border-gray-200 rounded-full pl-4 pr-10 py-1.5 text-sm focus:outline-none focus:border-orange-400 transition-all">
+                    <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute right-3 top-2.5"></i>
+                </div>
+                
+                <button onclick="switchView('favoritos')" class="relative p-2 text-gray-600 hover:text-rose-500 transition-colors">
+                    <i data-lucide="heart" class="w-6 h-6"></i>
+                    <span id="fav-count" class="absolute -top-1 -right-1 bg-rose-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+                </button>
+
+                <button onclick="toggleCart()" class="relative p-2 text-gray-600 hover:text-orange-500 transition-colors">
+                    <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+                    <span id="cart-count" class="absolute -top-1 -right-1 bg-orange-500 text-white text-xs w-4 h-4 rounded-full flex items-center justify-center font-bold hidden">0</span>
+                </button>
+
+                <button onclick="switchView('cuenta')" class="flex items-center gap-1.5 p-2 text-gray-600 hover:text-orange-500 transition-colors border border-gray-200 rounded-full sm:px-3">
+                    <i data-lucide="user" class="w-5 h-5"></i>
+                    <span id="nav-user-name" class="text-xs font-medium hidden sm:inline">Mi Cuenta</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div id="cart-sidebar" class="fixed inset-0 z-50 overflow-hidden hidden">
+        <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm transition-opacity" onclick="toggleCart()"></div>
+        <div class="absolute inset-y-0 right-0 max-w-full flex pl-10">
+            <div class="w-screen max-w-md bg-white shadow-2xl flex flex-col">
+                <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+                    <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2"><i data-lucide="shopping-cart" class="text-orange-500"></i> Tu Carrito</h2>
+                    <button onclick="toggleCart()" class="text-gray-400 hover:text-gray-500"><i data-lucide="x" class="w-6 h-6"></i></button>
+                </div>
+                <div id="cart-items" class="flex-1 overflow-y-auto p-6 space-y-4 custom-scrollbar"></div>
+                <div id="cart-summary" class="p-6 border-t border-gray-100 bg-gray-50 space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <main class="min-h-[calc(100vh-80px)]">
+        
+        <section id="view-inicio" class="view-section dynamic-section">
+            <div class="relative bg-gradient-to-br from-amber-50 via-orange-50 to-orange-100 py-20 px-4 overflow-hidden">
+                <div class="max-w-7xl mx-auto grid md:grid-cols-2 gap-12 items-center relative z-10">
+                    <div class="space-y-6 text-center md:text-left">
+                        <span class="inline-block bg-orange-100 text-orange-700 text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full">⚡ 100% Natural & Saludable</span>
+                        <h1 class="brand-font text-4xl sm:text-6xl font-extrabold text-gray-900 leading-tight">El auténtico y delicioso poder de la <span class="text-orange-500 underline decoration-wavy decoration-amber-400">Calabaza</span></h1>
+                        <p class="text-lg text-gray-600 max-w-xl">Descubre nuestras gomitas artesanales y funcionales. Diseñadas para brindarte bienestar, energía limpia y vitaminas esenciales con un sabor irresistible.</p>
+                        <div class="flex flex-wrap gap-4 justify-center md:justify-start">
+                            <button onclick="switchView('catalogo')" class="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3.5 rounded-2xl shadow-lg shadow-orange-500/20 transition-all flex items-center gap-2">Explorar Catálogo <i data-lucide="arrow-right" class="w-5 h-5"></i></button>
+                            <button onclick="scrollToElement('promos-banner')" class="bg-white hover:bg-gray-50 text-gray-800 border border-gray-200 font-bold px-6 py-3.5 rounded-2xl transition-all">Ver Ofertas</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-center relative">
+                        <div class="w-72 h-72 sm:w-96 sm:h-96 bg-gradient-to-tr from-orange-400 to-amber-300 rounded-full absolute filter blur-3xl opacity-30 animate-pulse"></div>
+                        <div class="w-64 h-64 sm:w-80 sm:h-80 bg-white rounded-3xl shadow-2xl p-4 flex flex-col justify-between relative transform rotate-3 hover:rotate-0 transition-transform duration-500 border border-orange-100 overflow-hidden">
+                            <img src="https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=80&w=600" alt="Gomitas Destacadas" class="w-full h-2/3 object-cover rounded-2xl">
+                            <div class="mt-2">
+                                <h3 class="brand-font font-bold text-lg text-gray-900">Pack Premium Fit</h3>
+                                <p class="text-xs text-gray-500">Vitaminas + Antioxidantes</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 py-16">
+                <div class="text-center max-w-xl mx-auto mb-12">
+                    <h2 class="brand-font text-3xl font-bold">¿Por qué elegir nuestras Gomitas de Calabaza?</h2>
+                    <p class="text-gray-500 mt-2">Nutrición inteligente en un formato divertido y delicioso.</p>
+                </div>
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center space-y-3 shadow-sm">
+                        <div class="bg-orange-50 text-orange-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto text-xl font-bold">🌱</div>
+                        <h4 class="font-bold text-gray-900">100% Orgánicas</h4>
+                        <p class="text-sm text-gray-500">Cultivadas localmente de manera limpia y sostenible.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center space-y-3 shadow-sm">
+                        <div class="bg-amber-50 text-amber-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto text-xl font-bold">✨</div>
+                        <h4 class="font-bold text-gray-900">Ricas en Vitaminas</h4>
+                        <p class="text-sm text-gray-500">Alto contenido de Vitamina A, C y Zinc para tus defensas.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center space-y-3 shadow-sm">
+                        <div class="bg-yellow-50 text-yellow-600 w-12 h-12 rounded-xl flex items-center justify-center mx-auto text-xl font-bold">💪</div>
+                        <h4 class="font-bold text-gray-900">Bajas en Azúcar</h4>
+                        <p class="text-sm text-gray-500">Endulzadas naturalmente con stevia y extractos de fruta.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-2xl border border-gray-100 text-center space-y-3 shadow-sm">
+                        <div class="bg-green-50 text-green-500 w-12 h-12 rounded-xl flex items-center justify-center mx-auto text-xl font-bold">🛡️</div>
+                        <h4 class="font-bold text-gray-900">Digestión Saludable</h4>
+                        <p class="text-sm text-gray-500">Aporte natural de fibra soluble que cuida tu microbiota.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="promos-banner" class="max-w-7xl mx-auto px-4 mb-16">
+                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-3xl p-8 sm:p-12 text-white relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+                    <div class="space-y-3 z-10 text-center md:text-left">
+                        <span class="bg-white/20 text-white text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider">Oferta de la semana</span>
+                        <h3 class="brand-font text-3xl sm:text-4xl font-bold">¡Edición Especial Halloween Todo el Año!</h3>
+                        <p class="text-indigo-100 max-w-md">Compra 2 frascos de Gomitas con Sabores Especiales y llévate el tercero totalmente GRATIS.</p>
+                    </div>
+                    <button onclick="switchView('catalogo')" class="bg-amber-400 hover:bg-amber-300 text-gray-900 font-bold px-8 py-4 rounded-2xl whitespace-nowrap shadow-lg transition-transform hover:scale-105 z-10">Aprovechar Oferta 🎁</button>
+                    <div class="absolute -right-10 -bottom-10 text-[10rem] opacity-10 select-none">🎃</div>
+                </div>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4 pb-20">
+                <div class="flex items-center justify-between mb-8">
+                    <h3 class="brand-font text-2xl sm:text-3xl font-bold">Los Más Vendidos 🔥</h3>
+                    <button onclick="switchView('catalogo')" class="text-orange-500 font-bold hover:underline flex items-center gap-1">Ver todos <i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+                </div>
+                <div id="featured-products-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+            </div>
+        </section>
+
+        <section id="view-catalogo" class="view-section dynamic-section hidden max-w-7xl mx-auto px-4 py-10">
+            <div class="flex flex-col md:flex-row gap-8">
+                <aside class="w-full md:w-64 space-y-6 shrink-0">
+                    <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm space-y-6">
+                        <div>
+                            <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-1.5"><i data-lucide="layers" class="w-4 h-4 text-orange-500"></i> Categorías</h4>
+                            <div id="filter-categories" class="space-y-2"></div>
+                        </div>
+                        <hr class="border-gray-100">
+                        <div>
+                            <h4 class="font-bold text-gray-900 mb-3 flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-orange-500"></i> Ordenar por</h4>
+                            <select id="filter-sort" onchange="renderCatalog()" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400">
+                                <option value="popularidad">Más Populares</option>
+                                <option value="precio-bajo">Precio: Menor a Mayor</option>
+                                <option value="precio-alto">Precio: Mayor a Menor</option>
+                            </select>
+                        </div>
+                    </div>
+                </aside>
+
+                <div class="flex-1 space-y-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                        <span id="catalog-results-count" class="text-sm font-medium text-gray-500">Mostrando 0 productos</span>
+                        <div class="relative w-full sm:w-64">
+                            <input type="text" id="catalog-search" oninput="renderCatalog()" placeholder="Filtrar en esta categoría..." class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-4 pr-10 py-2 text-sm focus:outline-none focus:border-orange-400">
+                            <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute right-3 top-3"></i>
+                        </div>
+                    </div>
+                    <div id="catalog-products-grid" class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-favoritos" class="view-section dynamic-section hidden max-w-7xl mx-auto px-4 py-10">
+            <h2 class="brand-font text-3xl font-bold mb-6 flex items-center gap-2"><i data-lucide="heart" class="text-rose-500 fill-rose-500"></i> Mis Productos Favoritos</h2>
+            <div id="favoritos-grid" class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6"></div>
+        </section>
+
+        <section id="view-checkout" class="view-section dynamic-section hidden max-w-4xl mx-auto px-4 py-10">
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden grid md:grid-cols-5">
+                <div class="md:col-span-3 p-6 sm:p-8 space-y-6">
+                    <h2 class="brand-font text-2xl font-bold text-gray-900 flex items-center gap-2 border-b border-gray-100 pb-4"><i data-lucide="credit-card" class="text-orange-500"></i> Detalles de Facturación</h2>
+                    <form id="checkout-form" onsubmit="processOrder(event)" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre</label>
+                                <input type="text" required id="bill-name" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Apellido</label>
+                                <input type="text" required id="bill-lastname" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Cédula o RUC / ID Fiscal</label>
+                            <input type="text" required id="bill-id" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Dirección de Entrega</label>
+                            <input type="text" required id="bill-address" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Teléfono</label>
+                                <input type="tel" required id="bill-phone" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Correo Electrónico</label>
+                                <input type="email" required id="bill-email" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                            </div>
+                        </div>
+                        <div class="pt-4">
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Método de Pago Configurables</label>
+                            <div class="grid grid-cols-2 gap-3">
+                                <label class="border-2 border-orange-500 bg-orange-50/50 p-3 rounded-xl flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="payment-method" value="simulado" checked class="text-orange-500 focus:ring-orange-500">
+                                    <span class="text-sm font-semibold">Tarjeta de Crédito (Pasarela Simulada)</span>
+                                </label>
+                            </div>
+                        </div>
+                        <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-orange-500/20 transition-all flex items-center justify-center gap-2">Finalizar Compra & Emitir Factura <i data-lucide="check-circle"></i></button>
+                    </form>
+                </div>
+                <div class="md:col-span-2 bg-gray-50 p-6 sm:p-8 border-l border-gray-100 flex flex-col justify-between">
+                    <div>
+                        <h3 class="font-bold text-gray-900 mb-4">Resumen de la Compra</h3>
+                        <div id="checkout-items-list" class="space-y-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar"></div>
+                    </div>
+                    <div id="checkout-totals" class="border-t border-gray-200 pt-4 space-y-2 mt-6"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-factura" class="view-section dynamic-section hidden max-w-2xl mx-auto px-4 py-10">
+            <div class="bg-white rounded-3xl border border-gray-200 shadow-2xl p-6 sm:p-8 space-y-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-orange-500 to-amber-400"></div>
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 class="brand-font text-2xl font-bold text-orange-600">PumpkinFit S.A.</h2>
+                        <p class="text-xs text-gray-400">RUC: 1792847192001<br>Quito, Pichincha, Ecuador</p>
+                    </div>
+                    <div class="text-right">
+                        <span class="bg-green-100 text-green-700 font-bold text-xs px-2.5 py-1 rounded-full uppercase">Factura Pagada</span>
+                        <p class="text-xs text-gray-500 mt-2" id="factura-numero">No: P-0001</p>
+                        <p class="text-xs text-gray-500" id="factura-fecha">Fecha: --/--/----</p>
+                    </div>
+                </div>
+                <hr class="border-gray-100">
+                <div>
+                    <h4 class="text-xs font-bold uppercase text-gray-400 mb-1">Cliente</h4>
+                    <p class="text-sm font-bold text-gray-900" id="factura-cliente-nombre">---</p>
+                    <p class="text-xs text-gray-600" id="factura-cliente-id">ID: ---</p>
+                    <p class="text-xs text-gray-600" id="factura-cliente-dir">Dirección: ---</p>
+                </div>
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 text-gray-400 text-xs font-bold uppercase">
+                            <th class="py-2">Producto</th>
+                            <th class="py-2 text-center">Cant.</th>
+                            <th class="py-2 text-right">Precio</th>
+                            <th class="py-2 text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="factura-table-rows" class="divide-y divide-gray-100"></tbody>
+                </table>
+                <div id="factura-totales" class="w-1/2 ml-auto space-y-1.5 text-sm text-right"></div>
+                <div class="flex gap-4 pt-4 border-t border-gray-100">
+                    <button onclick="window.print()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2.5 rounded-xl transition-colors flex items-center justify-center gap-1.5"><i data-lucide="printer" class="w-4 h-4"></i> Imprimir</button>
+                    <button onclick="switchView('inicio')" class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2.5 rounded-xl transition-all shadow-md shadow-orange-500/10 text-center">Volver a la Tienda</button>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-cuenta" class="view-section dynamic-section hidden max-w-4xl mx-auto px-4 py-10">
+            <div id="auth-container" class="max-w-md mx-auto bg-white rounded-3xl border border-gray-100 shadow-xl p-6 sm:p-8 space-y-6">
+                <div class="text-center">
+                    <h2 class="brand-font text-2xl font-bold text-gray-900">Bienvenido de Nuevo</h2>
+                    <p class="text-sm text-gray-500 mt-1">Ingresa para gestionar tus pedidos.</p>
+                </div>
+                <form id="login-form" onsubmit="handleAuth(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Usuario</label>
+                        <input type="text" id="auth-username" required placeholder="admin o cliente" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Contraseña</label>
+                        <input type="password" id="auth-password" required placeholder="••••••••" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800 space-y-1">
+                        <p class="font-bold">🔑 Credenciales de prueba:</p>
+                        <p>• Administrador: <span class="font-mono bg-white px-1 rounded">admin</span> / <span class="font-mono bg-white px-1 rounded">admin123</span></p>
+                    </div>
+                    <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl transition-all shadow-md">Iniciar Sesión</button>
+                </form>
+            </div>
+
+            <div id="profile-container" class="hidden space-y-8">
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm p-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="flex items-center gap-4 text-center sm:text-left">
+                        <div class="bg-orange-100 text-orange-600 w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-2xl" id="profile-avatar">U</div>
+                        <div>
+                            <h2 class="brand-font text-2xl font-bold text-gray-900" id="profile-name">Nombre de Usuario</h2>
+                            <p class="text-sm text-gray-500" id="profile-role">Rol del Usuario</p>
+                        </div>
+                    </div>
+                    <button onclick="handleLogout()" class="bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold px-4 py-2 rounded-xl text-sm transition-colors flex items-center gap-1"><i data-lucide="log-out" class="w-4 h-4"></i> Cerrar Sesión</button>
+                </div>
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="p-6 border-b border-gray-100">
+                        <h3 class="brand-font text-xl font-bold flex items-center gap-2"><i data-lucide="package" class="text-orange-500"></i> Historial de tus Pedidos</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-400 text-xs font-bold uppercase">
+                                <tr>
+                                    <th class="p-4">Pedido ID</th>
+                                    <th class="p-4">Fecha</th>
+                                    <th class="p-4">Total</th>
+                                    <th class="p-4">Estado</th>
+                                    <th class="p-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="user-orders-rows" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-admin" class="view-section dynamic-section hidden max-w-7xl mx-auto px-4 py-10 space-y-8">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-gray-200 pb-4">
+                <div>
+                    <h2 class="brand-font text-3xl font-bold text-gray-900">Panel Operativo de Control</h2>
+                    <p class="text-sm text-gray-500">Gestión global de inventario, stock y despacho de pedidos.</p>
+                </div>
+                <button onclick="openProductModal()" class="bg-purple-600 hover:bg-purple-700 text-white font-bold px-4 py-2.5 rounded-xl text-sm flex items-center gap-1.5 shadow-md"><i data-lucide="plus-circle" class="w-4 h-4"></i> Nuevo Producto</button>
+            </div>
+
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                    <div class="bg-purple-50 text-purple-600 p-3 rounded-xl"><i data-lucide="dollar-sign"></i></div>
+                    <div><p class="text-xs font-bold text-gray-400 uppercase">Ventas Totales</p><h4 class="text-xl font-bold" id="metric-sales">$0.00</h4></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                    <div class="bg-blue-50 text-blue-600 p-3 rounded-xl"><i data-lucide="shopping-bag"></i></div>
+                    <div><p class="text-xs font-bold text-gray-400 uppercase">Pedidos</p><h4 class="text-xl font-bold" id="metric-orders">0</h4></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                    <div class="bg-orange-50 text-orange-600 p-3 rounded-xl"><i data-lucide="box"></i></div>
+                    <div><p class="text-xs font-bold text-gray-400 uppercase">Productos</p><h4 class="text-xl font-bold" id="metric-products">0</h4></div>
+                </div>
+                <div class="bg-white p-5 rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                    <div class="bg-red-50 text-red-600 p-3 rounded-xl"><i data-lucide="alert-triangle"></i></div>
+                    <div><p class="text-xs font-bold text-gray-400 uppercase">Stock Crítico</p><h4 class="text-xl font-bold text-red-600" id="metric-alert">0</h4></div>
+                </div>
+            </div>
+
+            <div class="grid lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-gray-100"><h3 class="font-bold text-gray-900">Control de Catálogo e Inventario</h3></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-50 text-gray-400 text-xs font-bold uppercase">
+                                <tr>
+                                    <th class="p-4">Producto</th>
+                                    <th class="p-4">Categoría</th>
+                                    <th class="p-4 text-right">Precio</th>
+                                    <th class="p-4 text-center">Stock</th>
+                                    <th class="p-4 text-center">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="admin-inventory-rows" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-gray-100"><h3 class="font-bold text-gray-900">Flujo de Pedidos Recientes</h3></div>
+                    <div id="admin-orders-list" class="divide-y divide-gray-100 max-h-[500px] overflow-y-auto custom-scrollbar"></div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-nosotros" class="view-section dynamic-section hidden max-w-4xl mx-auto px-4 py-16 text-center space-y-6">
+            <h2 class="brand-font text-4xl font-bold text-gray-900">Nuestra Filosofía</h2>
+            <p class="text-lg text-gray-600 max-w-2xl mx-auto">En PumpkinFit nos apasiona redefinir la forma en que consumes snacks funcionales.</p>
+        </section>
+
+        <section id="view-contacto" class="view-section dynamic-section hidden max-w-4xl mx-auto px-4 py-10">
+            <div class="bg-white rounded-3xl border border-gray-100 shadow-xl overflow-hidden grid md:grid-cols-2">
+                <div class="p-6 sm:p-8 space-y-6 bg-gradient-to-br from-orange-500 to-amber-500 text-white flex flex-col justify-between">
+                    <div>
+                        <h2 class="brand-font text-3xl font-bold">¡Hablemos!</h2>
+                        <p class="text-orange-50 text-sm mt-2">¿Tienes dudas sobre integraciones comerciales? Escríbenos.</p>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-3"><i data-lucide="map-pin"></i> <span class="text-sm">Checa Centro, Calle Manuel Zurita, Quito, Ecuador</span></div>
+                    </div>
+                    <p class="text-xs text-orange-200/80">© 2026 PumpkinFit. Todos los derechos reservados.</p>
+                </div>
+                <form onsubmit="handleContact(event)" class="p-6 sm:p-8 space-y-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre Completo</label>
+                        <input type="text" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-orange-400">
+                    </div>
+                    <button type="submit" class="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 rounded-xl shadow-md transition-all">Enviar Mensaje</button>
+                </form>
+            </div>
+        </section>
+    </main>
+
+    <div id="product-modal" class="fixed inset-0 z-50 overflow-hidden hidden flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-gray-900/40 backdrop-blur-sm" onclick="closeProductModal()"></div>
+        <div class="bg-white rounded-3xl w-full max-w-lg shadow-2xl z-10 overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-5 border-b border-gray-100 flex items-center justify-between">
+                <h3 id="modal-product-title" class="font-bold text-gray-900 text-lg">Formulario de Producto</h3>
+                <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-500"><i data-lucide="x"></i></button>
+            </div>
+            <form id="product-form" onsubmit="saveProduct(event)" class="p-5 space-y-4 overflow-y-auto custom-scrollbar">
+                <input type="hidden" id="form-product-id">
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Nombre del Producto</label>
+                    <input type="text" id="form-product-name" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Categoría</label>
+                        <select id="form-product-category" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400"></select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Código (SKU)</label>
+                        <input type="text" id="form-product-sku" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Precio ($)</label>
+                        <input type="number" step="0.01" id="form-product-price" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Stock</label>
+                        <input type="number" id="form-product-stock" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Descripción Breve</label>
+                    <textarea id="form-product-desc" rows="2" required class="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-orange-400 resize-none"></textarea>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Foto del Producto (Desde tu PC)</label>
+                    <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-xl border border-gray-200">
+                        <label class="cursor-pointer bg-orange-500 hover:bg-orange-600 text-white font-bold text-xs px-4 py-2.5 rounded-lg transition-colors whitespace-nowrap">
+                            Seleccionar Archivo
+                            <input type="file" id="form-product-file" accept="image/*" onchange="previewLocalFile(this)" class="hidden">
+                        </label>
+                        <span id="file-name-preview" class="text-xs text-gray-400 truncate">Ninguna imagen seleccionada</span>
+                    </div>
+                    <div class="mt-2 hidden" id="image-preview-container">
+                        <img id="image-base64-preview" src="" class="w-20 h-20 object-cover rounded-xl border border-gray-200">
+                    </div>
+                </div>
+
+                <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 rounded-xl transition-all shadow-md">Guardar Producto</button>
+            </form>
+        </div>
+    </div>
+
+    <footer class="bg-gray-900 text-gray-400 py-6 border-t border-gray-800 text-center text-xs">
+        <p>© 2026 PumpkinFit S.A. Hecho con fines comerciales y de desarrollo académico estructurado.</p>
+    </footer>
+
+    <script>
+        let CATEGORIES = ["Gomitas clásicas", "Gomitas con sabores especiales", "Promociones", "Más vendidos", "Nuevos productos"];
+        
+        let PRODUCTS = [
+            { id: 1, name: "Clásica Calabaza Sweet", category: "Gomitas clásicas", price: 5.99, stock: 45, sku: "PK-CLAS-01", desc: "El balance perfecto de puré natural de calabaza con un toque dulce y tradicional.", ingredients: "Calabaza orgánica", benefits: "Vitamina A", image: "https://images.unsplash.com/photo-1581798459219-318e76aecc7b?auto=format&fit=crop&q=80&w=600", sales: 120 },
+            { id: 2, name: "Pumpkin Jengibre Explosivo", category: "Gomitas con sabores especiales", price: 6.50, stock: 4, sku: "PK-JING-02", desc: "Fórmula energizante e inmunológica con infusión pura de jengibre y calabaza.", ingredients: "Calabaza", benefits: "Defensas altas", image: "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=80&w=600", sales: 98 }
+        ];
+
+        let CART = [];
+        let FAVORITES = [];
+        let ORDERS = [
+            { id: "ORD-9481", date: "2026-06-02", client: "Juan Pérez", items: 2, total: 12.49, status: "entregado" }
+        ];
+        
+        let CURRENT_USER = { loggedIn: true, name: "Director Administrativo", role: "admin", username: "admin" }; 
+        let selectedCategoryFilter = "";
+        let currentUploadedBase64 = ""; // Almacena la conversión del archivo local
+
+        window.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+            updateAuthUI();
+            renderCategoryFilters();
+            renderFeaturedProducts();
+            renderCatalog();
+            updateGlobalCounters();
+        });
+
+        // FUNCIÓN CLAVE: Convierte el archivo del escritorio a texto Base64
+        function previewLocalFile(input) {
+            const file = input.files[0];
+            if (file) {
+                document.getElementById('file-name-preview').innerText = file.name;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    currentUploadedBase64 = e.target.result; // Aquí está el contenido binario de la imagen
+                    
+                    // Mostrar miniatura de lo que se acaba de subir
+                    document.getElementById('image-base64-preview').src = currentUploadedBase64;
+                    document.getElementById('image-preview-container').classList.remove('hidden');
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function switchView(viewId) {
+            document.querySelectorAll('.dynamic-section').forEach(section => section.classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            if(viewId === 'catalogo') renderCatalog();
+            if(viewId === 'favoritos') renderFavorites();
+            if(viewId === 'admin') renderAdminPanel();
+            if(viewId === 'cuenta') renderProfile();
+        }
+
+        function scrollToElement(id) {
+            document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function showNotification(message, type = 'success') {
+            const container = document.getElementById('notification-container');
+            const toast = document.createElement('div');
+            toast.className = `flex items-center gap-2 px-4 py-3 rounded-xl shadow-xl text-white text-sm font-semibold pointer-events-auto transition-all duration-300 transform translate-y-2 opacity-0 bg-gray-900`;
+            if(type === 'success') toast.classList.add('bg-gradient-to-r', 'from-emerald-500', 'to-teal-600');
+            if(type === 'error') toast.classList.add('bg-gradient-to-r', 'from-rose-500', 'to-red-600');
+            toast.innerHTML = `<span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 50);
+            setTimeout(() => {
+                toast.classList.add('translate-y-2', 'opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        function createProductCard(product) {
+            const isFav = FAVORITES.includes(product.id);
+            const outOfStock = product.stock <= 0;
+            return `
+                <div class="bg-white rounded-3xl border border-gray-100 p-4 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative group">
+                    <button onclick="toggleFavorite(${product.id})" class="absolute top-6 right-6 z-10 bg-white/90 backdrop-blur-md p-2 rounded-full border border-gray-100 text-gray-400 hover:text-rose-500 transition-colors shadow-sm">
+                        <i data-lucide="heart" class="w-4 h-4 ${isFav ? 'text-rose-500 fill-rose-500' : ''}"></i>
+                    </button>
+                    <div>
+                        <div class="bg-gray-100 rounded-2xl h-44 overflow-hidden relative select-none">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                            ${outOfStock ? '<span class="absolute inset-0 bg-white/80 backdrop-blur-xs flex items-center justify-center font-bold text-red-500 text-sm tracking-wider uppercase rounded-2xl">Agotado</span>' : ''}
+                        </div>
+                        <div class="mt-4 space-y-1">
+                            <span class="text-[10px] uppercase font-bold text-orange-500 tracking-wider bg-orange-50 px-2 py-0.5 rounded-md">${product.category}</span>
+                            <h4 class="font-bold text-gray-900 group-hover:text-orange-500 transition-colors">${product.name}</h4>
+                            <p class="text-xs text-gray-400 line-clamp-2">${product.desc}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-4 mt-4 border-t border-gray-50">
+                        <span class="font-extrabold text-lg text-gray-900">$${product.price.toFixed(2)}</span>
+                        <button ${outOfStock ? 'disabled' : ''} onclick="addToCart(${product.id})" class="bg-orange-500 hover:bg-orange-600 disabled:bg-gray-200 text-white p-2.5 rounded-xl shadow-md shadow-orange-500/10 transition-colors">
+                            <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFeaturedProducts() {
+            const grid = document.getElementById('featured-products-grid');
+            const sorted = [...PRODUCTS].sort((a,b) => b.sales - a.sales).slice(0,4);
+            grid.innerHTML = sorted.map(p => createProductCard(p)).join('');
+            lucide.createIcons();
+        }
+
+        function renderCategoryFilters() {
+            const container = document.getElementById('filter-categories');
+            let html = `<button onclick="setCategoryFilter('')" class="w-full text-left text-sm px-3 py-2 rounded-xl flex items-center justify-between font-medium ${selectedCategoryFilter === '' ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50'}"><span>Todos</span><i data-lucide="chevron-right" class="w-4 h-4"></i></button>`;
+            CATEGORIES.forEach(cat => {
+                const count = PRODUCTS.filter(p => p.category === cat).length;
+                html += `<button onclick="setCategoryFilter('${cat}')" class="w-full text-left text-sm px-3 py-2 rounded-xl flex items-center justify-between font-medium ${selectedCategoryFilter === cat ? 'bg-orange-50 text-orange-600' : 'text-gray-600 hover:bg-gray-50'}"><span class="truncate">${cat}</span><span class="text-xs bg-gray-100 text-gray-400 px-1.5 py-0.5 rounded-full font-mono">${count}</span></button>`;
+            });
+            container.innerHTML = html;
+            lucide.createIcons();
+        }
+
+        function setCategoryFilter(cat) {
+            selectedCategoryFilter = cat;
+            renderCategoryFilters();
+            renderCatalog();
+        }
+
+        function renderCatalog() {
+            const grid = document.getElementById('catalog-products-grid');
+            const searchVal = document.getElementById('catalog-search').value.toLowerCase();
+            let filtered = PRODUCTS.filter(p => (selectedCategoryFilter === "" || p.category === selectedCategoryFilter) && p.name.toLowerCase().includes(searchVal));
+            document.getElementById('catalog-results-count').innerText = `Mostrando ${filtered.length} productos`;
+            grid.innerHTML = filtered.length === 0 ? '<div class="col-span-full text-center py-12 text-gray-400">No hay productos.</div>' : filtered.map(p => createProductCard(p)).join('');
+            lucide.createIcons();
+        }
+
+        function handleGlobalSearch(val) {
+            document.getElementById('catalog-search').value = val;
+            switchView('catalogo');
+        }
+
+        function renderFavorites() {
+            const grid = document.getElementById('favoritos-grid');
+            const favProducts = PRODUCTS.filter(p => FAVORITES.includes(p.id));
+            grid.innerHTML = favProducts.length === 0 ? '<div class="col-span-full text-center py-12 text-gray-400">Sin favoritos.</div>' : favProducts.map(p => createProductCard(p)).join('');
+            lucide.createIcons();
+        }
+
+        function toggleCart() { document.getElementById('cart-sidebar').classList.toggle('hidden'); }
+
+        function addToCart(productId) {
+            const product = PRODUCTS.find(p => p.id === productId);
+            const existing = CART.find(item => item.product.id === productId);
+            if(existing) existing.quantity++; else CART.push({ product, quantity: 1 });
+            showNotification(`Agregado: ${product.name}`);
+            updateGlobalCounters();
+            renderCart();
+        }
+
+        function updateCartQuantity(productId, change) {
+            const item = CART.find(i => i.product.id === productId);
+            if(!item) return;
+            item.quantity += change;
+            if(item.quantity <= 0) CART = CART.filter(i => i.product.id !== productId);
+            updateGlobalCounters();
+            renderCart();
+        }
+
+        function updateGlobalCounters() {
+            document.getElementById('cart-count').innerText = CART.reduce((acc, i) => acc + i.quantity, 0);
+            document.getElementById('cart-count').classList.toggle('hidden', CART.length === 0);
+            document.getElementById('fav-count').innerText = FAVORITES.length;
+            document.getElementById('fav-count').classList.toggle('hidden', FAVORITES.length === 0);
+        }
+
+        function toggleFavorite(id) {
+            if(FAVORITES.includes(id)) FAVORITES = FAVORITES.filter(f => f !== id); else FAVORITES.push(id);
+            updateGlobalCounters(); renderCatalog(); renderFeaturedProducts();
+        }
+
+        function renderCart() {
+            const container = document.getElementById('cart-items');
+            const summary = document.getElementById('cart-summary');
+            if(CART.length === 0) {
+                container.innerHTML = `<div class="text-center py-12 text-gray-400">Carrito vacío.</div>`;
+                summary.innerHTML = ''; return;
+            }
+            container.innerHTML = CART.map(item => `
+                <div class="flex items-center gap-4 bg-gray-50 p-3 rounded-2xl border border-gray-100">
+                    <img src="${item.product.image}" class="w-12 h-12 rounded-xl object-cover border bg-white">
+                    <div class="flex-1 min-w-0"><h4 class="text-sm font-bold text-gray-900 truncate">${item.product.name}</h4></div>
+                    <div class="flex items-center gap-2 border bg-white rounded-lg p-1">
+                        <button onclick="updateCartQuantity(${item.product.id}, -1)"><i data-lucide="minus" class="w-3 h-3"></i></button>
+                        <span class="text-xs font-bold font-mono">${item.quantity}</span>
+                        <button onclick="updateCartQuantity(${item.product.id}, 1)"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            summary.innerHTML = `<button onclick="goToCheckout()" class="w-full bg-orange-500 text-white font-bold py-3 rounded-xl">Proceder al Checkout</button>`;
+            lucide.createIcons();
+        }
+
+        function goToCheckout() { toggleCart(); switchView('checkout'); renderCheckoutSummary(); }
+
+        function renderCheckoutSummary() {
+            document.getElementById('checkout-items-list').innerHTML = CART.map(item => `<div class="flex justify-between text-sm"><span>${item.product.name} x${item.quantity}</span><span>$${(item.product.price * item.quantity).toFixed(2)}</span></div>`).join('');
+            const subtotal = CART.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+            document.getElementById('checkout-totals').innerHTML = `<div class="flex justify-between font-bold text-gray-900"><span>Total</span><span>$${(subtotal * 1.12).toFixed(2)}</span></div>`;
+        }
+
+        function processOrder(e) {
+            e.preventDefault();
+            const subtotal = CART.reduce((acc, item) => acc + (item.product.price * item.quantity), 0);
+            document.getElementById('factura-numero').innerText = `Factura No: P-${Math.floor(Math.random()*9000)}`;
+            document.getElementById('factura-fecha').innerText = `Fecha: ${new Date().toLocaleDateString()}`;
+            document.getElementById('factura-cliente-nombre').innerText = `${document.getElementById('bill-name').value} ${document.getElementById('bill-lastname').value}`;
+            document.getElementById('factura-cliente-id').innerText = `ID: ${document.getElementById('bill-id').value}`;
+            document.getElementById('factura-cliente-dir').innerText = `Dirección: ${document.getElementById('bill-address').value}`;
+            document.getElementById('factura-table-rows').innerHTML = CART.map(item => `<tr><td class="py-2">${item.product.name}</td><td class="py-2 text-center">${item.quantity}</td><td class="py-2 text-right">$${item.product.price.toFixed(2)}</td><td class="py-2 text-right">$${(item.product.price * item.quantity).toFixed(2)}</td></tr>`).join('');
+            document.getElementById('factura-totales').innerHTML = `<div>Total con IVA: $${(subtotal*1.12).toFixed(2)}</div>`;
+            CART = []; updateGlobalCounters(); switchView('factura');
+        }
+
+        function updateAuthUI() {
+            document.getElementById('nav-admin').classList.toggle('hidden', CURRENT_USER.role !== 'admin');
+            document.getElementById('nav-user-name').innerText = CURRENT_USER.name;
+        }
+
+        function handleAuth(e) {
+            e.preventDefault();
+            CURRENT_USER = { loggedIn: true, name: "Director Administrativo", role: "admin", username: "admin" };
+            updateAuthUI(); switchView('admin');
+        }
+
+        function handleLogout() {
+            CURRENT_USER = { loggedIn: false, name: "Mi Cuenta", role: "", username: "" };
+            updateAuthUI(); switchView('inicio');
+        }
+
+        function renderAdminPanel() {
+            document.getElementById('metric-products').innerText = PRODUCTS.length;
+            document.getElementById('admin-inventory-rows').innerHTML = PRODUCTS.map(p => `
+                <tr class="text-gray-700">
+                    <td class="p-4 flex items-center gap-3">
+                        <img src="${p.image}" class="w-10 h-10 rounded-xl object-cover border bg-gray-50">
+                        <div><p class="font-bold text-gray-900">${p.name}</p></div>
+                    </td>
+                    <td class="p-4 text-xs">${p.category}</td>
+                    <td class="p-4 text-right font-mono font-bold">$${p.price.toFixed(2)}</td>
+                    <td class="p-4 text-center">${p.stock} unids</td>
+                    <td class="p-4 text-center">
+                        <button onclick="openProductModal(${p.id})" class="text-blue-600 px-1"><i data-lucide="edit" class="w-4 h-4"></i></button>
+                        <button onclick="deleteProduct(${p.id})" class="text-rose-600 px-1"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // CONTROL CRUD ACTUALIZADO PARA LEER EL ARCHIVO CONVERTIDO EN BASE64
+        function openProductModal(productId = null) {
+            const selectCategory = document.getElementById('form-product-category');
+            selectCategory.innerHTML = CATEGORIES.map(c => `<option value="${c}">${c}</option>`).join('');
+            
+            // Reiniciar estados del cargador de imágenes local
+            currentUploadedBase64 = "";
+            document.getElementById('file-name-preview').innerText = "Ninguna imagen seleccionada";
+            document.getElementById('image-preview-container').classList.add('hidden');
+
+            if(productId) {
+                const p = PRODUCTS.find(prod => prod.id === productId);
+                document.getElementById('modal-product-title').innerText = "Editar Producto";
+                document.getElementById('form-product-id').value = p.id;
+                document.getElementById('form-product-name').value = p.name;
+                document.getElementById('form-product-category').value = p.category;
+                document.getElementById('form-product-sku').value = p.sku;
+                document.getElementById('form-product-price').value = p.price;
+                document.getElementById('form-product-stock').value = p.stock;
+                document.getElementById('form-product-desc').value = p.desc;
+                
+                // Si ya tiene una imagen cargada (url o Base64 anterior), la mostramos en la vista previa
+                if(p.image) {
+                    currentUploadedBase64 = p.image;
+                    document.getElementById('image-base64-preview').src = p.image;
+                    document.getElementById('image-preview-container').classList.remove('hidden');
+                    document.getElementById('file-name-preview').innerText = "Imagen ya asignada";
+                }
+            } else {
+                document.getElementById('modal-product-title').innerText = "Añadir Producto";
+                document.getElementById('product-form').reset();
+                document.getElementById('form-product-id').value = "";
+            }
+            document.getElementById('product-modal').classList.remove('hidden');
+        }
+
+        function closeProductModal() { document.getElementById('product-modal').classList.add('hidden'); }
+
+        function saveProduct(e) {
+            e.preventDefault();
+            const id = document.getElementById('form-product-id').value;
+            const name = document.getElementById('form-product-name').value;
+            const category = document.getElementById('form-product-category').value;
+            const sku = document.getElementById('form-product-sku').value;
+            const price = parseFloat(document.getElementById('form-product-price').value);
+            const stock = parseInt(document.getElementById('form-product-stock').value);
+            const desc = document.getElementById('form-product-desc').value;
+
+            // Si el usuario subió una foto nueva usa el string Base64, de lo contrario pone una imagen genérica
+            const finalImage = currentUploadedBase64 || "https://images.unsplash.com/photo-1599599810769-bcde5a160d32?auto=format&fit=crop&q=80&w=600";
+
+            if(id) {
+                const idx = PRODUCTS.findIndex(p => p.id == id);
+                PRODUCTS[idx] = { ...PRODUCTS[idx], name, category, sku, price, stock, desc, image: finalImage };
+                showNotification("Gomita modificada.");
+            } else {
+                const newId = PRODUCTS.length ? Math.max(...PRODUCTS.map(p => p.id)) + 1 : 1;
+                PRODUCTS.push({ id: newId, name, category, price, stock, sku, desc, image: finalImage, sales: 0 });
+                showNotification("Nueva variedad añadida.", "success");
+            }
+
+            closeProductModal(); renderAdminPanel(); renderCategoryFilters(); renderCatalog(); renderFeaturedProducts();
+        }
+
+        function deleteProduct(id) {
+            if(confirm("¿Eliminar del inventario?")) {
+                PRODUCTS = PRODUCTS.filter(p => p.id !== id);
+                renderAdminPanel(); renderCategoryFilters(); renderCatalog(); renderFeaturedProducts();
+            }
+        }
+
+        function handleContact(e) { e.preventDefault(); e.target.reset(); showNotification("Mensaje enviado."); }
+    </script>
+</body>
+</html>
